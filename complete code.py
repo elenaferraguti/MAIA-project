@@ -408,6 +408,38 @@ y_randfor_20 = rand_forest.predict(df_mix_20)
 y_logreg_20 = LogReg.predict(df_mix_20)
 y_svm_20 = svm.predict(df_mix_20)
 
+#%% Predictions plot
+image_mixed_18 = getionimage(hcc_cca_18ag, 1200, tol=0.1, z=1)
+dimensions_18 = image_mixed_18.shape
+import numpy as np
+predicted_18 = 2*np.ones(dimensions_18)
+for i in range(0, len(y_naiveb_18)):
+    indx = XCoord_mix_18[i]-1
+    indy = YCoord_mix_18[i]-1
+    
+    predicted_18[indy, indx] = y_naiveb_18[i]
+
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize=(16, 4))
+plt.imshow(predicted_18)
+
+
+image_mixed_20 = getionimage(hcc_cca_20ag, 1200, tol=0.1, z=1)
+dimensions_20 = image_mixed_20.shape
+import numpy as np
+predicted_20 = 2*np.ones(dimensions_20)
+for i in range(0, len(y_naiveb_20)):
+    indx = XCoord_mix_20[i]-1
+    indy = YCoord_mix_20[i]-1
+    
+    predicted_20[indy, indx] = y_naiveb_20[i]
+
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize=(16, 4))
+plt.imshow(predicted_20)
+
 #%% Libraries for autoencoder
 
 from sklearn.preprocessing import MinMaxScaler
@@ -504,5 +536,61 @@ yhat_18 = model.predict(X_encode18)
 
 X_encode20 = encoder.predict(X_mix20)
 yhat_20 = model.predict(X_encode20)
+
+#%% scatterplot 2D
+import seaborn as sns
+import random
+
+index = random.sample(range(0, X_test_encode.shape[0]), 100)
+X_test_encode_abs = abs(X_test_encode)
+
+p1=sns.scatterplot(x=X_test_encode_abs[:,3], y=X_test_encode_abs[:,6],
+              alpha=.3, 
+              legend=False,
+              data=X_test_encode_abs[index,:]);
+
+# add annotations one by one with a loop
+for line in index:
+    if line < 44335:
+      p1.text(X_test_encode_abs[line,3], X_test_encode_abs[line,6], line, horizontalalignment='left', size='medium', color='m')
+    else:
+      p1.text(X_test_encode_abs[line,3], X_test_encode_abs[line,6], line, horizontalalignment='left', size='medium', color='c')
+      
+#%% scatterplot 3D
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+Xax = X_test_encode_abs[:,10]
+Yax = X_test_encode_abs[:,14]
+Zax = X_test_encode_abs[:,21]
+cdict = {0:'m',1:'c'}
+label = {0:'cca',1:'hcc'}
+y = y_test
+
+fig = plt.figure(figsize=(14,9))
+ax = fig.add_subplot(111, 
+                     projection='3d')
+ 
+for l in np.unique(y):
+ ix=np.where(y==l)
+ ax.scatter(Xax[ix], 
+            Yax[ix], 
+            Zax[ix], 
+            c=cdict[l], 
+            s=60,
+           label=label[l])
+
+ax.set_xlabel("feature 3", 
+              fontsize=12)
+ax.set_ylabel("feature 6", 
+              fontsize=12)
+ax.set_zlabel("feature 10", 
+              fontsize=12)
+ 
+ax.view_init(60, 60)
+ax.legend()
+plt.title("3D PCA plot")
+plt.show()
 
 
