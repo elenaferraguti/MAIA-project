@@ -180,6 +180,9 @@ df_pure = df_pure.assign(Labels = labels)
 
 #%% Train-test splitting (70%-30%)
 
+df_pure = pd.read_csv('C:/Users/Elena/OneDrive/Desktop/HealthTech/Tesi/Dati/training_preproc_dataframe_norm_peak_max.csv', index_col=[0])
+
+
 from sklearn.model_selection import train_test_split
 
 y = df_pure.iloc[:,-1]
@@ -196,12 +199,13 @@ X_train, X_test, y_train, y_test = train_test_split(df_pure.iloc[:,0:-1],
 from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 
-knn40 = KNeighborsClassifier(n_neighbors=40) 
+knn40 = KNeighborsClassifier(n_neighbors=30) 
 
 knn40.fit(X_train, y_train)
 y_pred = knn40.predict(X_test)
 y_pred_train = knn40.predict(X_train)
-scores = cross_val_score(knn40, X, y, cv=5)
+scores = cross_val_score(knn40, X, y, cv=3)
+scores = scores.tolist()
 
 from sklearn.metrics import confusion_matrix
 print(confusion_matrix(y_test, y_pred))
@@ -228,7 +232,7 @@ NaiveB = GaussianNB()
 NaiveB.fit(X_train, y_train)
 y_pred = NaiveB.predict(X_test)
 y_pred_train = NaiveB.predict(X_train)
-scores.append(cross_val_score(NaiveB, X, y, cv=5))
+scores.append(cross_val_score(NaiveB, X, y, cv=3))
 
 print('***RESULTS ON TRAIN SET***')
 print("precision: ", metrics.precision_score(y_train, y_pred_train)) # tp / (tp + fp)
@@ -246,12 +250,12 @@ print("accuracy: ", metrics.accuracy_score(y_test, y_pred)) # (tp+tn)/m
 
 from sklearn.tree import DecisionTreeClassifier
 
-DecTree = DecisionTreeClassifier(criterion='gini', max_depth=10, min_samples_split=2, min_samples_leaf=2)
+DecTree = DecisionTreeClassifier(criterion='entropy', max_depth=50, min_samples_split=5, min_samples_leaf=2)
 
 DecTree.fit(X_train, y_train)
 y_pred_train = DecTree.predict(X_train)
 y_pred = DecTree.predict(X_test)
-scores.append(cross_val_score(DecTree, X, y, cv=5))
+scores.append(cross_val_score(DecTree, X, y, cv=3))
 
 
 print('***RESULTS ON TRAIN SET***')
@@ -277,12 +281,12 @@ tree.plot_tree(DecTree, fontsize=8)
 
 from sklearn.ensemble import RandomForestClassifier
 
-rand_forest = RandomForestClassifier(n_estimators=30, criterion='entropy', max_depth=6, min_samples_split=4, min_samples_leaf=2)
+rand_forest = RandomForestClassifier(n_estimators=100, criterion='entropy', max_depth=5, min_samples_split=10, min_samples_leaf=10)
 
 rand_forest.fit(X_train, y_train)
 y_pred_train = rand_forest.predict(X_train)
 y_pred = rand_forest.predict(X_test)
-scores.append(cross_val_score(rand_forest, X, y, cv=5))
+scores.append(cross_val_score(rand_forest, X, y, cv=3))
 
 print('***RESULTS ON TRAIN SET***')
 print("precision: ", metrics.precision_score(y_train, y_pred_train)) # tp / (tp + fp)
@@ -305,12 +309,12 @@ X_scaled = scaler.transform(X_train)
 
 from sklearn.linear_model import LogisticRegression
 
-LogReg = LogisticRegression(C=10, solver='lbfgs', max_iter=300000)
+LogReg = LogisticRegression(C=100, solver='liblinear', max_iter=10000, penalty='l1')
 
 LogReg.fit(X_train, y_train)
 y_pred_train = LogReg.predict(X_train)
 y_pred = LogReg.predict(X_test)
-scores.append(cross_val_score(LogReg, X, y, cv=5))
+scores.append(cross_val_score(LogReg, X, y, cv=3))
 
 print('***RESULTS ON TRAIN SET***')
 print("precision: ", metrics.precision_score(y_train, y_pred_train)) # tp / (tp + fp)
@@ -329,12 +333,12 @@ print("accuracy: ", metrics.accuracy_score(y_test, y_pred)) # (tp+tn)/m
 
 from sklearn.svm import SVC
 
-svm = SVC(kernel='linear',C=1)
+svm = SVC(kernel='poly',C=100, gamma=1, degree=2)
 
 svm.fit(X_train, y_train)
 y_pred_train = svm.predict(X_train)
 y_pred = svm.predict(X_test)
-scores.append(cross_val_score(svm, X, y, cv=5))
+scores.append(cross_val_score(svm, X, y, cv=3))
 
 print('***RESULTS ON TRAIN SET***')
 print("precision: ", metrics.precision_score(y_train, y_pred_train)) # tp / (tp + fp)
@@ -348,97 +352,79 @@ print("recall: ", metrics.recall_score(y_test, y_pred)) # tp / (tp + fn)
 print("f1_score: ", metrics.f1_score(y_test, y_pred)) #F1 = 2 * (precision * recall) / (precision + recall)
 print("accuracy: ", metrics.accuracy_score(y_test, y_pred)) # (tp+tn)/m
 
+#%%
+
+data = [np.array(scores[0:4]), scores[5], scores[6], scores[7], scores[8], scores[9]]
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize =(10, 7))
+ 
+# Creating axes instance
+ax = fig.add_axes([0, 0, 1, 1])
+ 
+# Creating plot
+bp = ax.boxplot(data)
+
+ax.set_xticklabels(['KNN', 'NaiveBayes',
+                    'DecTree', 'RandFor',
+                    'LogReg', 'SVM'])
+plt.xticks(fontsize=12)
+ 
+# show plot
+plt.show()
+
 #%% Loading, reading and preprocessing of MALDI data: tissue sample of combined tumours
 
-hcc_cca_18ag = ImzMLParser('/home/Elena/Desktop/MAIA project/Testing data/18ag 01666-20012022.imzML', include_spectra_metadata = None )
-hcc_cca_20ag = ImzMLParser('/home/Elena/Desktop/MAIA project/Testing data/20ag02608-09122021.imzML', include_spectra_metadata = None )
-coord_mix_18 = enumerate(hcc_cca_18ag.coordinates)
-coord_mix_20 = enumerate(hcc_cca_20ag.coordinates)
+hcc_cca = ImzMLParser('/home/Elena/Desktop/MAIA project/Testing data/18ag 01666-20012022.imzML', include_spectra_metadata = None )
+coord_mix = enumerate(hcc_cca.coordinates)
 
-(mz, spectrum0) = hcc_cca_18ag.getspectrum(0)
-(mz, spectrum1) = hcc_cca_18ag.getspectrum(1)
-spectra_mix_18 = []
-XCoord_mix_18 = []
-YCoord_mix_18 = []
-for i, (x,y,z) in coord_mix_18:
-        (mz, spectrum) = hcc_cca_18ag.getspectrum(i)
-        spectra_mix_18.append(spectrum)
-        XCoord_mix_18.append(x)
-        YCoord_mix_18.append(y)
-spectra_mix_18 = np.asarray(spectra_mix_18)
 
-(mz, spectrum0) = hcc_cca_20ag.getspectrum(0)
-(mz, spectrum1) = hcc_cca_20ag.getspectrum(1)
-spectra_mix_20 = []
-XCoord_mix_20 = []
-YCoord_mix_20 = []
-for i, (x,y,z) in coord_mix_20:
-        (mz, spectrum) = hcc_cca_20ag.getspectrum(i)
-        spectra_mix_20.append(spectrum)
-        XCoord_mix_20.append(x)
-        YCoord_mix_20.append(y)
-spectra_mix_20 = np.asarray(spectra_mix_20)
+(mz, spectrum0) = hcc_cca.getspectrum(0)
+(mz, spectrum1) = hcc_cca.getspectrum(1)
+spectra_mix = []
+XCoord_mix = []
+YCoord_mix = []
+for i, (x,y,z) in coord_mix:
+        (mz, spectrum) = hcc_cca.getspectrum(i)
+        spectra_mix.append(spectrum)
+        XCoord_mix.append(x)
+        YCoord_mix.append(y)
+spectra_mix = np.asarray(spectra_mix)
 
-peak_mix_18 = peak_mz(spectra_mix_18)
-peak_baseline_mix_18 = baseline_removal(peak_mix_18)
-norm_mix_18 = normalization(peak_baseline_mix_18, 'max peak', None)
+peak_mix = peak_mz(spectra_mix)
+peak_baseline_mix = baseline_removal(peak_mix)
+norm_mix = normalization(peak_baseline_mix, 'max peak', None)
 
-peak_mix_20 = peak_mz(spectra_mix_20)
-peak_baseline_mix_20 = baseline_removal(peak_mix_20)
-norm_mix_20 = normalization(peak_baseline_mix_20, 'max peak', None)
 
 #%% Dataframe cHCC-CCA
 
-df_mix_18 = pd.DataFrame(norm_mix_18, columns = mz_string)
-df_mix_20 = pd.DataFrame(norm_mix_20, columns = mz_string)
+df_mix = pd.DataFrame(norm_mix, columns = mz_string)
 
 #%% Predictions on MALDI data of cHCC-CCA with the trained algorithms
 
-y_knn_18 = knn40.predict(df_mix_18)
-y_naiveb_18 = NaiveB.predict(df_mix_18)
-y_dectree_18 = DecTree.predict(df_mix_18)
-y_randfor_18 = rand_forest.predict(df_mix_18)
-y_logreg_18 = LogReg.predict(df_mix_18)
-y_svm_18 = svm.predict(df_mix_18)
-
-y_knn_20 = knn40.predict(df_mix_20)
-y_naiveb_20 = NaiveB.predict(df_mix_20)
-y_dectree_20 = DecTree.predict(df_mix_20)
-y_randfor_20 = rand_forest.predict(df_mix_20)
-y_logreg_20 = LogReg.predict(df_mix_20)
-y_svm_20 = svm.predict(df_mix_20)
+y_knn_18 = knn40.predict(df_mix)
+y_naiveb_18 = NaiveB.predict(df_mix)
+y_dectree_18 = DecTree.predict(df_mix)
+y_randfor_18 = rand_forest.predict(df_mix)
+y_logreg_18 = LogReg.predict(df_mix)
+y_svm_18 = svm.predict(df_mix)
 
 #%% Predictions plot
-image_mixed_18 = getionimage(hcc_cca_18ag, 1200, tol=0.1, z=1)
-dimensions_18 = image_mixed_18.shape
+image_mixed = getionimage(hcc_cca, 1200, tol=0.1, z=1)
+dimensions = image_mixed.shape
 import numpy as np
-predicted_18 = 2*np.ones(dimensions_18)
+predicted = 2*np.ones(dimensions)
 for i in range(0, len(y_naiveb_18)):
-    indx = XCoord_mix_18[i]-1
-    indy = YCoord_mix_18[i]-1
+    indx = XCoord_mix[i]-1
+    indy = YCoord_mix[i]-1
     
-    predicted_18[indy, indx] = y_naiveb_18[i]
+    predicted[indy, indx] = y_naiveb_18[i]
 
 import matplotlib.pyplot as plt
 
 fig = plt.figure(figsize=(16, 4))
-plt.imshow(predicted_18)
+plt.imshow(predicted)
 
-
-image_mixed_20 = getionimage(hcc_cca_20ag, 1200, tol=0.1, z=1)
-dimensions_20 = image_mixed_20.shape
-import numpy as np
-predicted_20 = 2*np.ones(dimensions_20)
-for i in range(0, len(y_naiveb_20)):
-    indx = XCoord_mix_20[i]-1
-    indy = YCoord_mix_20[i]-1
-    
-    predicted_20[indy, indx] = y_naiveb_20[i]
-
-import matplotlib.pyplot as plt
-
-fig = plt.figure(figsize=(16, 4))
-plt.imshow(predicted_20)
 
 #%% Libraries for autoencoder
 
@@ -528,14 +514,11 @@ print(acc)
 
 #%% Features reduction for cHCC-CA MALDI
 
-X_mix18 = df_mix_18.iloc[:,:].values
-X_mix20 = df_mix_20.iloc[:,:].values
+X_mix = df_mix.iloc[:,:].values
 
-X_encode18 = encoder.predict(X_mix18)
-yhat_18 = model.predict(X_encode18)
+X_encode = encoder.predict(X_mix)
+yhat_mix = model.predict(X_encode)
 
-X_encode20 = encoder.predict(X_mix20)
-yhat_20 = model.predict(X_encode20)
 
 #%% scatterplot 2D
 import seaborn as sns
