@@ -502,15 +502,51 @@ encoder.compile()
 X_train_encode = encoder.predict(X_train)
 # encode the test data
 X_test_encode = encoder.predict(X_test)
-# define the model
-model = DecisionTreeClassifier()
-# fit the model on the training set
-model.fit(X_train_encode, y_train)
-# make predictions on the test set
-yhat = model.predict(X_test_encode)
-# calculate classification accuracy
+
+#%%
+knn_auto = KNeighborsClassifier(n_neighbors=10)
+knn_auto.fit(X_train_encode, y_train)
+yhat = knn_auto.predict(X_test_encode)
 acc = accuracy_score(y_test, yhat)
 print(acc)
+
+#%%
+naiveb_auto = GaussianNB()
+naiveb_auto.fit(X_train_encode, y_train)
+yhat = naiveb_auto.predict(X_test_encode)
+acc = accuracy_score(y_test, yhat)
+print(acc)
+
+#%%
+dectree_auto = DecisionTreeClassifier()
+dectree_auto.fit(X_train_encode, y_train)
+yhat = dectree_auto.predict(X_test_encode)
+acc = accuracy_score(y_test, yhat)
+print(acc)
+
+#%%
+randfor_auto = RandomForestClassifier()
+randfor_auto.fit(X_train_encode, y_train)
+yhat = randfor_auto.predict(X_test_encode)
+acc = accuracy_score(y_test, yhat)
+print(acc)
+
+#%%
+
+logreg_auto = LogisticRegression()
+logreg_auto.fit(X_train_encode, y_train)
+yhat = logreg_auto.predict(X_test_encode)
+acc = accuracy_score(y_test, yhat)
+print(acc)
+
+#%%
+
+svm_auto = SVC()
+svm_auto.fit(X_train_encode, y_train)
+yhat = svm_auto.predict(X_test_encode)
+acc = accuracy_score(y_test, yhat)
+print(acc)
+
 
 #%% Features reduction for cHCC-CA MALDI
 
